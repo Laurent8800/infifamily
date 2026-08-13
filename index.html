@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0B0F2A" />
+<title>Nova — Planning social</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#0B0F2A;
+  --deep:#121738;
+  --panel:#171D45;
+  --edge:#272F63;
+  --chalk:#F2F2F8;
+  --mist:#8F97C6;
+  --iris:#7C6BFF;
+  --amber:#FFB340;
+  --mint:#3ED9A4;
+  --rose:#FF5F7E;
+  --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--void);
+  color:var(--chalk);
+  font-family:'Instrument Sans',system-ui,sans-serif;
+  font-size:15px;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:88px;
+  background-image:
+    radial-gradient(900px 420px at 88% -12%, rgba(124,107,255,.20), transparent 62%),
+    radial-gradient(700px 380px at -8% 8%, rgba(62,217,164,.10), transparent 60%);
+  background-attachment:fixed;
+}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;}
+button{cursor:pointer;border:none;background:none;}
+h1,h2,h3{margin:0;font-family:'Bricolage Grotesque',system-ui,sans-serif;font-weight:800;letter-spacing:-.025em;line-height:1.05;}
+.mono{font-family:'JetBrains Mono',monospace;}
+
+.wrap{max-width:760px;margin:0 auto;padding:0 18px;}
+
+/* ── Topbar ─────────────────────────────────────── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:20px 0 14px;}
+.logo{display:flex;align-items:center;gap:9px;}
+.logo-mark{
+  width:26px;height:26px;border-radius:8px;
+  background:linear-gradient(135deg,var(--iris),var(--rose));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:14px;color:#fff;
+}
+.logo-text{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:17px;letter-spacing:-.03em;}
+.today-stamp{font-size:11px;color:var(--mist);text-transform:uppercase;letter-spacing:.1em;}
+
+/* ── Hero : ruban de jours (élément signature) ───── */
+.hero{padding:6px 0 22px;}
+.hero-label{font-size:11px;color:var(--mist);text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px;}
+.ribbon{
+  display:flex;gap:8px;overflow-x:auto;padding:2px 18px 12px;margin:0 -18px;
+  scroll-snap-type:x proximity;scrollbar-width:none;
+}
+.ribbon::-webkit-scrollbar{display:none;}
+.day{
+  flex:0 0 auto;width:56px;padding:11px 0 9px;border-radius:var(--r);
+  background:var(--deep);border:1px solid var(--edge);
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  scroll-snap-align:start;transition:transform .18s ease,border-color .18s ease,background .18s ease;
+  animation:rise .5s cubic-bezier(.2,.7,.3,1) backwards;
+}
+@keyframes rise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.day:hover{transform:translateY(-3px);border-color:var(--iris);}
+.day.is-today{border-color:var(--amber);background:rgba(255,179,64,.09);}
+.day.is-active{background:var(--iris);border-color:var(--iris);}
+.day.is-active .day-dow,.day.is-active .day-num{color:#fff;}
+.day-dow{font-size:10px;color:var(--mist);text-transform:uppercase;letter-spacing:.08em;}
+.day-num{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:600;}
+.day-dots{display:flex;gap:3px;height:5px;align-items:center;}
+.dot{width:5px;height:5px;border-radius:50%;}
+.dot.DRAFT{background:var(--mist);}
+.dot.SCHEDULED{background:var(--iris);}
+.dot.PUBLISHED{background:var(--mint);}
+.day.is-active .dot.SCHEDULED{background:#fff;}
+
+/* ── Compteurs ──────────────────────────────────── */
+.counters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:22px;}
+.counter{
+  background:var(--deep);border:1px solid var(--edge);border-radius:var(--r);
+  padding:13px 14px;position:relative;overflow:hidden;
+}
+.counter::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;}
+.counter.c-draft::after{background:var(--mist);}
+.counter.c-sched::after{background:var(--iris);}
+.counter.c-pub::after{background:var(--mint);}
+.counter-num{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;line-height:1;}
+.counter-lab{font-size:11px;color:var(--mist);margin-top:5px;text-transform:uppercase;letter-spacing:.08em;}
+
+/* ── Sections ───────────────────────────────────── */
+.view{display:none;}
+.view.on{display:block;animation:fade .32s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 13px;}
+.sec-head h2{font-size:21px;}
+.sec-head .aside{font-size:12px;color:var(--mist);}
+
+/* ── Cartes publication ─────────────────────────── */
+.posts{display:flex;flex-direction:column;gap:10px;}
+.post{
+  background:var(--deep);border:1px solid var(--edge);border-radius:var(--r);
+  padding:14px;display:flex;gap:13px;position:relative;overflow:hidden;
+  transition:border-color .18s ease,transform .18s ease;
+}
+.post:hover{border-color:var(--iris);transform:translateY(-2px);}
+.post::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;}
+.post.DRAFT::before{background:var(--mist);}
+.post.SCHEDULED::before{background:var(--iris);}
+.post.PUBLISHED::before{background:var(--mint);}
+.post-thumb{width:54px;height:54px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid var(--edge);}
+.post-body{flex:1;min-width:0;}
+.post-when{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--amber);margin-bottom:5px;letter-spacing:.02em;}
+.post-text{font-size:14px;line-height:1.45;margin:0 0 8px;word-break:break-word;}
+.post-tags{font-size:12px;color:var(--iris);margin-bottom:7px;word-break:break-word;}
+.post-foot{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.pill{font-size:10.5px;padding:3px 9px;border-radius:99px;background:var(--panel);color:var(--mist);border:1px solid var(--edge);}
+.state{font-size:10.5px;padding:3px 9px;border-radius:99px;font-weight:600;letter-spacing:.02em;}
+.state.DRAFT{background:rgba(143,151,198,.16);color:var(--mist);}
+.state.SCHEDULED{background:rgba(124,107,255,.18);color:#B9AEFF;}
+.state.PUBLISHED{background:rgba(62,217,164,.15);color:var(--mint);}
+.post-acts{display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
+.act{width:30px;height:28px;border-radius:8px;color:var(--mist);font-size:13px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;}
+.act:hover{background:var(--panel);color:var(--chalk);}
+
+/* ── Vide ───────────────────────────────────────── */
+.empty{
+  border:1px dashed var(--edge);border-radius:var(--r);padding:38px 22px;text-align:center;
+}
+.empty h3{font-size:16px;margin-bottom:7px;}
+.empty p{color:var(--mist);font-size:13.5px;margin:0 auto 16px;max-width:290px;line-height:1.5;}
+
+/* ── Grille mois ────────────────────────────────── */
+.mon-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.mon-title{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:19px;text-transform:capitalize;flex:1;}
+.mon-btn{width:34px;height:34px;border-radius:10px;background:var(--deep);border:1px solid var(--edge);color:var(--chalk);font-size:15px;}
+.mon-btn:hover{border-color:var(--iris);}
+.grid7{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.gd{font-size:9.5px;color:var(--mist);text-align:center;text-transform:uppercase;letter-spacing:.09em;padding-bottom:5px;}
+.cell{
+  aspect-ratio:1;background:var(--deep);border:1px solid var(--edge);border-radius:10px;
+  padding:6px 5px;display:flex;flex-direction:column;gap:3px;transition:border-color .15s,background .15s;
+}
+.cell:hover{border-color:var(--iris);}
+.cell.out{opacity:.32;}
+.cell.now{border-color:var(--amber);}
+.cell-n{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mist);}
+.cell.now .cell-n{color:var(--amber);}
+.cell-dots{display:flex;flex-wrap:wrap;gap:3px;}
+
+/* ── Formulaire ─────────────────────────────────── */
+.form{background:var(--deep);border:1px solid var(--edge);border-radius:var(--r);padding:17px;}
+.fld{margin-bottom:15px;}
+.fld:last-child{margin-bottom:0;}
+.fld label{display:block;font-size:11px;color:var(--mist);text-transform:uppercase;letter-spacing:.11em;margin-bottom:7px;}
+.in{
+  width:100%;background:var(--void);border:1px solid var(--edge);border-radius:10px;
+  padding:11px 13px;color:var(--chalk);outline:none;transition:border-color .15s;
+}
+.in:focus{border-color:var(--iris);}
+textarea.in{resize:vertical;line-height:1.5;min-height:110px;}
+.in::placeholder{color:#5A628F;}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.nets{display:flex;flex-wrap:wrap;gap:7px;}
+.net{
+  padding:8px 15px;border-radius:99px;background:var(--void);border:1px solid var(--edge);
+  font-size:13px;color:var(--mist);transition:all .16s;
+}
+.net:hover{border-color:var(--iris);color:var(--chalk);}
+.net.on{background:var(--iris);border-color:var(--iris);color:#fff;font-weight:600;}
+.count{display:flex;flex-wrap:wrap;gap:11px;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mist);}
+.count .bad{color:var(--rose);font-weight:600;}
+
+.drop{
+  border:1px dashed var(--edge);border-radius:11px;padding:20px;text-align:center;
+  position:relative;color:var(--mist);font-size:13px;transition:border-color .15s,color .15s;
+}
+.drop:hover{border-color:var(--iris);color:var(--chalk);}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.shot{display:none;align-items:center;gap:12px;}
+.shot.on{display:flex;}
+.shot img{width:60px;height:60px;border-radius:10px;object-fit:cover;border:1px solid var(--edge);}
+.shot button{font-size:12px;color:var(--rose);}
+
+.setchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
+.setchip{font-size:12px;padding:5px 12px;border-radius:99px;background:var(--panel);border:1px solid var(--edge);color:var(--mist);transition:all .15s;}
+.setchip:hover{border-color:var(--iris);color:var(--chalk);}
+
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px;}
+.btn{padding:12px 20px;border-radius:11px;font-weight:600;font-size:14px;transition:all .16s;}
+.btn-main{background:var(--iris);color:#fff;}
+.btn-main:hover{background:#8E7FFF;transform:translateY(-1px);}
+.btn-2{background:var(--void);border:1px solid var(--edge);color:var(--chalk);}
+.btn-2:hover{border-color:var(--iris);}
+
+/* Aperçu */
+.peek{background:var(--panel);border:1px solid var(--edge);border-radius:var(--r);padding:15px;margin-top:14px;}
+.peek-lab{font-size:11px;color:var(--mist);text-transform:uppercase;letter-spacing:.11em;margin-bottom:9px;}
+.peek img{width:100%;border-radius:10px;margin-bottom:10px;display:none;}
+.peek img.on{display:block;}
+.peek-txt{font-size:14px;line-height:1.5;white-space:pre-wrap;word-break:break-word;min-height:22px;}
+.peek-txt .none{color:var(--mist);font-style:italic;}
+
+/* Horaires */
+.slot{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--edge);font-size:13px;}
+.slot:first-child{border-top:none;}
+.slot .lab{font-family:'JetBrains Mono',monospace;font-size:12px;}
+.slot .why{font-size:11.5px;color:var(--mist);text-align:right;}
+.disc{font-size:11.5px;color:var(--mist);line-height:1.5;margin:0 0 11px;}
+
+.setrow{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--edge);}
+.setrow:first-child{border-top:none;}
+.setrow h4{margin:0 0 3px;font-size:14px;font-family:'Instrument Sans',sans-serif;font-weight:600;}
+.setrow .t{font-size:12.5px;color:var(--iris);word-break:break-word;}
+
+/* ── Barre de navigation basse ──────────────────── */
+.tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  background:rgba(11,15,42,.93);backdrop-filter:blur(14px);
+  border-top:1px solid var(--edge);
+  padding:9px 12px calc(9px + env(safe-area-inset-bottom));
+  display:flex;justify-content:space-around;max-width:760px;margin:0 auto;
+}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 14px;border-radius:11px;color:var(--mist);transition:color .15s,background .15s;}
+.tab.on{color:var(--iris);background:rgba(124,107,255,.12);}
+.tab-ic{font-size:16px;line-height:1;}
+.tab-tx{font-size:10px;letter-spacing:.03em;}
+
+.toast{
+  position:fixed;left:50%;bottom:104px;transform:translateX(-50%) translateY(14px);
+  background:var(--panel);border:1px solid var(--edge);color:var(--chalk);
+  padding:11px 18px;border-radius:11px;font-size:13.5px;z-index:60;
+  opacity:0;pointer-events:none;transition:all .26s cubic-bezier(.2,.7,.3,1);max-width:88vw;text-align:center;
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+.warn{background:rgba(255,95,126,.1);border:1px solid rgba(255,95,126,.32);border-radius:11px;padding:11px 14px;font-size:12.5px;margin-bottom:16px;display:none;line-height:1.5;}
+.warn.on{display:block;}
+
+@media(min-width:700px){
+  .counters{max-width:440px;}
+  .day{width:62px;}
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="topbar">
+    <div class="logo">
+      <div class="logo-mark">N</div>
+      <div class="logo-text">Nova</div>
+    </div>
+    <div class="today-stamp mono" id="stamp"></div>
+  </header>
+
+  <div class="warn" id="warn">
+    Sauvegarde locale indisponible ici — tes publications tiendront le temps de la session.
+    Une fois le fichier en ligne ou ouvert depuis ton ordinateur, tout est conservé.
+  </div>
+
+  <!-- Ruban de jours : navigation + densité du planning -->
+  <section class="hero">
+    <div class="hero-label">Les 14 prochains jours</div>
+    <div class="ribbon" id="ribbon"></div>
+  </section>
+
+  <div class="counters">
+    <div class="counter c-draft"><div class="counter-num" id="n-draft">0</div><div class="counter-lab">Brouillons</div></div>
+    <div class="counter c-sched"><div class="counter-num" id="n-sched">0</div><div class="counter-lab">Programmés</div></div>
+    <div class="counter c-pub"><div class="counter-num" id="n-pub">0</div><div class="counter-lab">Publiés</div></div>
+  </div>
+
+  <!-- PLANNING -->
+  <section class="view on" id="v-plan">
+    <div class="sec-head">
+      <h2 id="plan-title">À venir</h2>
+      <span class="aside" id="plan-aside"></span>
+    </div>
+    <div class="posts" id="plan-list"></div>
+  </section>
+
+  <!-- MOIS -->
+  <section class="view" id="v-month">
+    <div class="mon-head">
+      <button class="mon-btn" onclick="shiftMonth(-1)" aria-label="Mois précédent">←</button>
+      <div class="mon-title" id="mon-title"></div>
+      <button class="mon-btn" onclick="shiftMonth(1)" aria-label="Mois suivant">→</button>
+    </div>
+    <div class="grid7" id="gd-row"></div>
+    <div class="grid7" id="cells" style="margin-top:5px;"></div>
+    <div class="sec-head" style="margin-top:26px;"><h2>Ce mois-ci</h2></div>
+    <div class="posts" id="month-list"></div>
+  </section>
+
+  <!-- CREER -->
+  <section class="view" id="v-new">
+    <div class="sec-head"><h2 id="form-title">Nouvelle publication</h2></div>
+    <div class="form">
+      <div class="fld">
+        <label>Réseaux</label>
+        <div class="nets" id="nets">
+          <button class="net" data-n="Instagram">Instagram</button>
+          <button class="net" data-n="LinkedIn">LinkedIn</button>
+          <button class="net" data-n="X">X</button>
+          <button class="net" data-n="Facebook">Facebook</button>
+          <button class="net" data-n="TikTok">TikTok</button>
+        </div>
+      </div>
+
+      <div class="fld">
+        <label>Photo</label>
+        <label class="drop" id="drop">
+          Choisir une image
+          <input type="file" id="file" accept="image/*" />
+        </label>
+        <div class="shot" id="shot" style="margin-top:10px;">
+          <img id="shot-img" src="" alt="" />
+          <button onclick="clearImg()">Retirer</button>
+        </div>
+      </div>
+
+      <div class="fld">
+        <label>Texte</label>
+        <textarea class="in" id="txt" placeholder="Qu'est-ce que tu veux raconter ?"></textarea>
+        <div class="count" id="count"></div>
+      </div>
+
+      <div class="fld">
+        <label>Hashtags</label>
+        <input class="in" type="text" id="tags" placeholder="#velo #fontainebleau" />
+        <div class="setchips" id="quick"></div>
+      </div>
+
+      <div class="two">
+        <div class="fld"><label>Date</label><input class="in" type="date" id="date" /></div>
+        <div class="fld"><label>Heure</label><input class="in" type="time" id="time" /></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-main" onclick="savePost('SCHEDULED')">Programmer</button>
+        <button class="btn btn-2" onclick="savePost('DRAFT')">Brouillon</button>
+        <button class="btn btn-2" onclick="savePost('PUBLISHED')">Déjà publié</button>
+        <button class="btn btn-2" id="cancel" style="display:none;" onclick="resetForm()">Annuler</button>
+      </div>
+    </div>
+
+    <div class="peek">
+      <div class="peek-lab">Aperçu</div>
+      <img id="peek-img" src="" alt="" />
+      <div class="peek-txt" id="peek-txt"><span class="none">Ton texte apparaîtra ici…</span></div>
+    </div>
+
+    <div class="peek">
+      <div class="peek-lab">Quand publier</div>
+      <p class="disc">
+        Repères moyens, pas une donnée de l'algorithme : les plateformes ne le publient pas.
+        Le plus fiable reste tes propres statistiques dans l'app du réseau.
+      </p>
+      <div id="slots"></div>
+    </div>
+  </section>
+
+  <!-- HASHTAGS -->
+  <section class="view" id="v-tags">
+    <div class="sec-head"><h2>Mes hashtags</h2><span class="aside">réutilisables en un clic</span></div>
+    <div class="form" style="margin-bottom:16px;">
+      <div class="two">
+        <div class="fld"><label>Nom</label><input class="in" type="text" id="s-name" placeholder="Vélo" /></div>
+        <div class="fld"><label>Hashtags</label><input class="in" type="text" id="s-tags" placeholder="#cyclisme #route" /></div>
+      </div>
+      <button class="btn btn-main" onclick="addSet()">Enregistrer</button>
+    </div>
+    <div class="form"><div id="sets"></div></div>
+  </section>
+</div>
+
+<nav class="tabs" id="tabs">
+  <button class="tab on" data-v="plan"><span class="tab-ic">◈</span><span class="tab-tx">Planning</span></button>
+  <button class="tab" data-v="month"><span class="tab-ic">▦</span><span class="tab-tx">Mois</span></button>
+  <button class="tab" data-v="new"><span class="tab-ic">✚</span><span class="tab-tx">Créer</span></button>
+  <button class="tab" data-v="tags"><span class="tab-ic">#</span><span class="tab-tx">Tags</span></button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ── Stockage ─────────────────────────────────── */
+var mem={}, ok=true;
+try{ localStorage.setItem("nv.t","1"); localStorage.removeItem("nv.t"); }catch(e){ ok=false; }
+function load(k,d){ try{ var r=ok?localStorage.getItem(k):mem[k]; return r?JSON.parse(r):d; }catch(e){ return d; } }
+function save(k,v){ var r=JSON.stringify(v); try{ if(ok)localStorage.setItem(k,r); else mem[k]=r; }catch(e){ mem[k]=r; toast("Mémoire pleine — retire des photos."); } }
+if(!ok) document.getElementById("warn").classList.add("on");
+
+/* ── État ─────────────────────────────────────── */
+var posts=load("nv.posts",[]), sets=load("nv.sets",[]);
+var nets={}, img=null, editId=null, monthRef=new Date(), pickedDay=null;
+
+var LABEL={DRAFT:"Brouillon",SCHEDULED:"Programmé",PUBLISHED:"Publié"};
+var LIMIT={Instagram:2200,X:280,LinkedIn:3000,Facebook:63206,TikTok:2200};
+var TIMES={
+  Instagram:[["Mar–Ven 11h–13h","pause déjeuner"],["Tous les jours 18h–21h","pic du soir"]],
+  LinkedIn:[["Mar–Jeu 8h–10h","avant le travail"],["Mar–Jeu 12h–13h","déjeuner pro"]],
+  X:[["Lun–Ven 9h–11h","actu du matin"],["Tous les jours 19h–21h","pic soirée"]],
+  Facebook:[["Mer–Ven 13h–16h","actif en journée"]],
+  TikTok:[["Tous les jours 18h–22h","forte activité"]]
+};
+
+/* ── Utilitaires ──────────────────────────────── */
+function esc(s){ var d=document.createElement("div"); d.textContent=s==null?"":String(s); return d.innerHTML; }
+function iso(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function today(){ return iso(new Date()); }
+function human(s){ if(!s)return""; var d=new Date(s+"T00:00:00"); return isNaN(d)?s:d.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"}); }
+var tt; function toast(m){ var t=document.getElementById("toast"); t.textContent=m; t.classList.add("on"); clearTimeout(tt); tt=setTimeout(function(){t.classList.remove("on");},2400); }
+
+/* ── Navigation ───────────────────────────────── */
+function go(v){
+  ["plan","month","new","tags"].forEach(function(k){
+    document.getElementById("v-"+k).classList.toggle("on",k===v);
+  });
+  var tabs=document.querySelectorAll(".tab");
+  for(var i=0;i<tabs.length;i++) tabs[i].classList.toggle("on",tabs[i].getAttribute("data-v")===v);
+  if(v==="plan") renderPlan();
+  if(v==="month") renderMonth();
+  if(v==="tags") renderSets();
+  if(v==="new") renderQuick();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+window.go=go;
+document.getElementById("tabs").addEventListener("click",function(e){
+  var b=e.target.closest(".tab"); if(b) go(b.getAttribute("data-v"));
+});
+
+/* ── Ruban ────────────────────────────────────── */
+function renderRibbon(){
+  var out="", base=new Date(), t=today();
+  for(var i=0;i<14;i++){
+    var d=new Date(base.getFullYear(),base.getMonth(),base.getDate()+i);
+    var k=iso(d);
+    var dayPosts=posts.filter(function(p){return p.date===k;});
+    var dots=dayPosts.slice(0,3).map(function(p){return '<span class="dot '+p.status+'"></span>';}).join("");
+    out+='<button class="day'+(k===t?" is-today":"")+(k===pickedDay?" is-active":"")+'" '+
+         'style="animation-delay:'+(i*26)+'ms" onclick="pickDay(\''+k+'\')">'+
+         '<span class="day-dow">'+d.toLocaleDateString("fr-FR",{weekday:"short"}).slice(0,3)+'</span>'+
+         '<span class="day-num">'+d.getDate()+'</span>'+
+         '<span class="day-dots">'+dots+'</span></button>';
+  }
+  document.getElementById("ribbon").innerHTML=out;
+  document.getElementById("stamp").textContent=new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
+}
+
+window.pickDay=function(k){
+  pickedDay = (pickedDay===k) ? null : k;
+  renderRibbon(); renderPlan(); go("plan");
+};
+
+/* ── Compteurs ────────────────────────────────── */
+function renderCounts(){
+  var c={DRAFT:0,SCHEDULED:0,PUBLISHED:0};
+  posts.forEach(function(p){ if(c[p.status]!==undefined)c[p.status]++; });
+  document.getElementById("n-draft").textContent=c.DRAFT;
+  document.getElementById("n-sched").textContent=c.SCHEDULED;
+  document.getElementById("n-pub").textContent=c.PUBLISHED;
+}
+
+/* ── Carte publication ────────────────────────── */
+function card(p){
+  return '<article class="post '+p.status+'">'+
+    (p.image?'<img class="post-thumb" src="'+p.image+'" alt="" />':'')+
+    '<div class="post-body">'+
+      '<div class="post-when">'+human(p.date)+(p.time?" · "+p.time:"")+'</div>'+
+      '<p class="post-text">'+esc(p.text||"(photo seule)")+'</p>'+
+      (p.tags?'<div class="post-tags">'+esc(p.tags)+'</div>':'')+
+      '<div class="post-foot"><span class="state '+p.status+'">'+LABEL[p.status]+'</span>'+
+      (p.networks||[]).map(function(n){return '<span class="pill">'+n+'</span>';}).join("")+'</div>'+
+    '</div>'+
+    '<div class="post-acts">'+
+      '<button class="act" onclick="editPost('+p.id+')" title="Modifier">✎</button>'+
+      '<button class="act" onclick="dupPost('+p.id+')" title="Dupliquer">⧉</button>'+
+      '<button class="act" onclick="delPost('+p.id+')" title="Supprimer">✕</button>'+
+    '</div></article>';
+}
+function emptyBox(t,d){
+  return '<div class="empty"><h3>'+t+'</h3><p>'+d+'</p><button class="btn btn-main" onclick="go(\'new\')">Créer une publication</button></div>';
+}
+
+/* ── Vue planning ─────────────────────────────── */
+function renderPlan(){
+  var list, title, aside="";
+  if(pickedDay){
+    list=posts.filter(function(p){return p.date===pickedDay;});
+    title=human(pickedDay);
+    aside='<button class="act" style="width:auto;padding:0 8px;" onclick="pickDay(\''+pickedDay+'\')">tout voir ✕</button>';
+  }else{
+    var t=today();
+    list=posts.filter(function(p){return p.status!=="PUBLISHED" && p.date>=t;});
+    title="À venir";
+    aside=list.length?list.length+" publication"+(list.length>1?"s":""):"";
+  }
+  list.sort(function(a,b){return (a.date+(a.time||"")).localeCompare(b.date+(b.time||""));});
+  document.getElementById("plan-title").textContent=title;
+  document.getElementById("plan-aside").innerHTML=aside;
+  document.getElementById("plan-list").innerHTML = list.length ? list.map(card).join("")
+    : emptyBox(pickedDay?"Journée libre":"Rien de prévu", pickedDay?"Aucune publication ce jour-là.":"Prépare ton prochain post, il apparaîtra ici et dans le ruban.");
+}
+
+/* ── Vue mois ─────────────────────────────────── */
+window.shiftMonth=function(n){ monthRef.setMonth(monthRef.getMonth()+n); renderMonth(); };
+function renderMonth(){
+  var y=monthRef.getFullYear(), m=monthRef.getMonth();
+  document.getElementById("mon-title").textContent=monthRef.toLocaleDateString("fr-FR",{month:"long",year:"numeric"});
+  document.getElementById("gd-row").innerHTML=["L","M","M","J","V","S","D"].map(function(d){return '<div class="gd">'+d+'</div>';}).join("");
+  var first=new Date(y,m,1), off=(first.getDay()+6)%7, start=new Date(y,m,1-off), t=today(), out="";
+  for(var i=0;i<42;i++){
+    var d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i), k=iso(d);
+    var dp=posts.filter(function(p){return p.date===k;});
+    out+='<button class="cell'+(d.getMonth()!==m?" out":"")+(k===t?" now":"")+'" onclick="newOn(\''+k+'\')">'+
+         '<span class="cell-n">'+d.getDate()+'</span>'+
+         '<span class="cell-dots">'+dp.slice(0,4).map(function(p){return '<span class="dot '+p.status+'"></span>';}).join("")+'</span></button>';
+  }
+  document.getElementById("cells").innerHTML=out;
+  var mp=posts.filter(function(p){ var d=new Date(p.date+"T00:00:00"); return d.getFullYear()===y&&d.getMonth()===m; })
+              .sort(function(a,b){return (a.date+(a.time||"")).localeCompare(b.date+(b.time||""));});
+  document.getElementById("month-list").innerHTML = mp.length ? mp.map(card).join("")
+    : emptyBox("Mois vide","Choisis un jour dans la grille pour y planifier quelque chose.");
+}
+window.newOn=function(k){ resetForm(); document.getElementById("date").value=k; go("new"); };
+
+/* ── Réseaux / compteur ───────────────────────── */
+document.getElementById("nets").addEventListener("click",function(e){
+  var b=e.target.closest(".net"); if(!b)return;
+  var n=b.getAttribute("data-n");
+  if(nets[n]){ delete nets[n]; b.classList.remove("on"); } else { nets[n]=1; b.classList.add("on"); }
+  renderCount(); renderSlots();
+});
+function netList(){ return Object.keys(nets); }
+function renderCount(){
+  var len=document.getElementById("txt").value.length+document.getElementById("tags").value.length;
+  var ns=netList(), box=document.getElementById("count");
+  if(!ns.length){ box.innerHTML='<span>'+len+' caractères</span>'; return; }
+  box.innerHTML=ns.map(function(n){
+    var l=LIMIT[n], over=l&&len>l;
+    return '<span class="'+(over?"bad":"")+'">'+n+' '+len+(l?"/"+l:"")+'</span>';
+  }).join("");
+}
+function renderSlots(){
+  var ns=netList(); if(!ns.length) ns=Object.keys(TIMES);
+  document.getElementById("slots").innerHTML=ns.map(function(n){
+    return '<div style="margin-bottom:9px;"><div style="font-size:11.5px;font-weight:600;margin-bottom:2px;">'+n+'</div>'+
+      (TIMES[n]||[]).map(function(s){return '<div class="slot"><span class="lab">'+s[0]+'</span><span class="why">'+s[1]+'</span></div>';}).join("")+'</div>';
+  }).join("");
+}
+
+/* ── Photo ────────────────────────────────────── */
+document.getElementById("file").addEventListener("change",function(e){
+  var f=e.target.files[0]; if(!f)return;
+  var r=new FileReader();
+  r.onload=function(){
+    var im=new Image();
+    im.onload=function(){
+      var max=700,w=im.width,h=im.height;
+      if(w>max||h>max){ var s=Math.min(max/w,max/h); w=Math.round(w*s); h=Math.round(h*s); }
+      var c=document.createElement("canvas"); c.width=w; c.height=h;
+      c.getContext("2d").drawImage(im,0,0,w,h);
+      img=c.toDataURL("image/jpeg",.72);
+      document.getElementById("shot-img").src=img;
+      document.getElementById("shot").classList.add("on");
+      document.getElementById("drop").style.display="none";
+      peek();
+    };
+    im.src=r.result;
+  };
+  r.readAsDataURL(f);
+});
+window.clearImg=function(){
+  img=null; document.getElementById("file").value="";
+  document.getElementById("shot").classList.remove("on");
+  document.getElementById("drop").style.display="block";
+  peek();
+};
+
+/* ── Aperçu ───────────────────────────────────── */
+document.getElementById("txt").addEventListener("input",function(){peek();renderCount();});
+document.getElementById("tags").addEventListener("input",function(){peek();renderCount();});
+function peek(){
+  var t=document.getElementById("txt").value.trim(), g=document.getElementById("tags").value.trim();
+  var pi=document.getElementById("peek-img"), pt=document.getElementById("peek-txt");
+  if(img){ pi.src=img; pi.classList.add("on"); } else pi.classList.remove("on");
+  pt.innerHTML = (!t&&!g) ? '<span class="none">Ton texte apparaîtra ici…</span>' : esc(t+(g?"\n\n"+g:""));
+}
+
+/* ── Groupes de hashtags ──────────────────────── */
+window.addSet=function(){
+  var n=document.getElementById("s-name").value.trim(), t=document.getElementById("s-tags").value.trim();
+  if(!n||!t){ toast("Renseigne un nom et des hashtags."); return; }
+  sets.push({id:Date.now(),name:n,tags:t}); save("nv.sets",sets);
+  document.getElementById("s-name").value=""; document.getElementById("s-tags").value="";
+  renderSets(); renderQuick(); toast("Groupe enregistré.");
+};
+window.delSet=function(id){ sets=sets.filter(function(s){return s.id!==id;}); save("nv.sets",sets); renderSets(); renderQuick(); };
+function renderSets(){
+  var b=document.getElementById("sets");
+  b.innerHTML = sets.length ? sets.map(function(s){
+    return '<div class="setrow"><div><h4>'+esc(s.name)+'</h4><div class="t">'+esc(s.tags)+'</div></div>'+
+           '<button class="act" onclick="delSet('+s.id+')">✕</button></div>';
+  }).join("") : '<p style="color:var(--mist);font-size:13.5px;margin:0;">Aucun groupe. Crée-en un au-dessus pour le réutiliser en un clic.</p>';
+}
+function renderQuick(){
+  var b=document.getElementById("quick");
+  b.innerHTML = sets.map(function(s){ return '<button class="setchip" onclick="useSet('+s.id+')">'+esc(s.name)+'</button>'; }).join("");
+}
+window.useSet=function(id){
+  var s=sets.filter(function(x){return x.id===id;})[0]; if(!s)return;
+  var i=document.getElementById("tags");
+  i.value = i.value.trim() ? i.value.trim()+" "+s.tags : s.tags;
+  peek(); renderCount();
+};
+
+/* ── CRUD publications ────────────────────────── */
+window.savePost=function(status){
+  var t=document.getElementById("txt").value.trim(), g=document.getElementById("tags").value.trim();
+  if(!t&&!img){ toast("Ajoute un texte ou une photo."); return; }
+  var d=document.getElementById("date").value||today(), h=document.getElementById("time").value||"";
+  var ns=netList(); if(!ns.length) ns=["Instagram"];
+  if(editId){
+    posts=posts.map(function(p){ return p.id!==editId?p:{id:p.id,text:t,tags:g,networks:ns,status:status,date:d,time:h,image:img}; });
+    toast("Publication mise à jour.");
+  }else{
+    posts.push({id:Date.now(),text:t,tags:g,networks:ns,status:status,date:d,time:h,image:img});
+    toast(status==="SCHEDULED"?"Programmée.":status==="PUBLISHED"?"Marquée publiée.":"Brouillon enregistré.");
+  }
+  save("nv.posts",posts); resetForm(); refresh(); go("plan");
+};
+window.editPost=function(id){
+  var p=posts.filter(function(x){return x.id===id;})[0]; if(!p)return;
+  editId=id;
+  document.getElementById("txt").value=p.text||"";
+  document.getElementById("tags").value=p.tags||"";
+  document.getElementById("date").value=p.date||"";
+  document.getElementById("time").value=p.time||"";
+  nets={}; var bs=document.querySelectorAll(".net");
+  for(var i=0;i<bs.length;i++){
+    var n=bs[i].getAttribute("data-n"), on=(p.networks||[]).indexOf(n)!==-1;
+    bs[i].classList.toggle("on",on); if(on) nets[n]=1;
+  }
+  if(p.image){ img=p.image; document.getElementById("shot-img").src=img;
+    document.getElementById("shot").classList.add("on"); document.getElementById("drop").style.display="none";
+  } else clearImg();
+  document.getElementById("form-title").textContent="Modifier la publication";
+  document.getElementById("cancel").style.display="inline-block";
+  peek(); renderCount(); renderSlots(); go("new");
+};
+window.dupPost=function(id){
+  var p=posts.filter(function(x){return x.id===id;})[0]; if(!p)return;
+  posts.push({id:Date.now(),text:p.text,tags:p.tags,networks:p.networks,status:"DRAFT",date:p.date,time:p.time,image:p.image});
+  save("nv.posts",posts); refresh(); toast("Dupliquée en brouillon.");
+};
+window.delPost=function(id){
+  posts=posts.filter(function(p){return p.id!==id;});
+  save("nv.posts",posts); refresh(); toast("Supprimée.");
+};
+window.resetForm=function(){
+  editId=null;
+  document.getElementById("txt").value=""; document.getElementById("tags").value="";
+  document.getElementById("date").value=today(); document.getElementById("time").value="";
+  nets={}; var bs=document.querySelectorAll(".net");
+  for(var i=0;i<bs.length;i++) bs[i].classList.remove("on");
+  clearImg();
+  document.getElementById("form-title").textContent="Nouvelle publication";
+  document.getElementById("cancel").style.display="none";
+  renderCount(); renderSlots();
+};
+
+function refresh(){ renderRibbon(); renderCounts(); renderPlan(); renderMonth(); }
+
+/* ── Init ─────────────────────────────────────── */
+document.getElementById("date").value=today();
+refresh(); renderSlots(); renderCount(); renderSets(); renderQuick();
+})();
+</script>
+</body>
+</html>
