@@ -131,6 +131,8 @@ h1,h2,h3{margin:0;font-family:'Bricolage Grotesque',system-ui,sans-serif;font-we
 .post-acts{display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
 .act{width:30px;height:28px;border-radius:8px;color:var(--mist);font-size:13px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;}
 .act:hover{background:var(--panel);color:var(--chalk);}
+.act-share{background:rgba(124,107,255,.16);color:#B9AEFF;font-size:15px;}
+.act-share:hover{background:var(--iris);color:#fff;}
 
 /* ── Vide ───────────────────────────────────────── */
 .empty{
@@ -363,6 +365,16 @@ textarea.in{resize:vertical;line-height:1.5;min-height:110px;}
     </div>
 
     <div class="peek">
+      <div class="peek-lab">Publier ensuite</div>
+      <p class="disc" style="margin:0;">
+        Une fois enregistrée, chaque publication a un bouton <strong style="color:#B9AEFF;">↗</strong>.
+        Sur téléphone il ouvre le partage de ton mobile : tu choisis Instagram, la photo part
+        et le texte est déjà copié — tu n'as qu'à le coller dans la légende.
+        Sur ordinateur, la photo se télécharge et le texte est copié.
+      </p>
+    </div>
+
+    <div class="peek">
       <div class="peek-lab">Quand publier</div>
       <p class="disc">
         Repères moyens, pas une donnée de l'algorithme : les plateformes ne le publient pas.
@@ -489,6 +501,7 @@ function card(p){
       (p.networks||[]).map(function(n){return '<span class="pill">'+n+'</span>';}).join("")+'</div>'+
     '</div>'+
     '<div class="post-acts">'+
+      '<button class="act act-share" onclick="sharePost('+p.id+')" title="Partager">↗</button>'+
       '<button class="act" onclick="editPost('+p.id+')" title="Modifier">✎</button>'+
       '<button class="act" onclick="dupPost('+p.id+')" title="Dupliquer">⧉</button>'+
       '<button class="act" onclick="delPost('+p.id+')" title="Supprimer">✕</button>'+
@@ -664,6 +677,63 @@ window.editPost=function(id){
   document.getElementById("cancel").style.display="inline-block";
   peek(); renderCount(); renderSlots(); go("new");
 };
+/* ── Partage ──────────────────────────────────────
+   Utilise le partage natif du téléphone (Web Share API) : la fenêtre de
+   partage s'ouvre, l'utilisateur choisit Instagram. Le texte est copié dans
+   le presse-papier en parallèle, car Instagram ne pré-remplit pas la légende
+   depuis un partage — il faut la coller. Sur ordinateur, le partage natif
+   n'existe pas : on retombe sur copie du texte + téléchargement de la photo. */
+function dataUrlToFile(dataUrl,name){
+  var parts=dataUrl.split(","), mime=parts[0].match(/:(.*?);/)[1];
+  var bin=atob(parts[1]), n=bin.length, u8=new Uint8Array(n);
+  while(n--) u8[n]=bin.charCodeAt(n);
+  return new File([u8],name,{type:mime});
+}
+function copyText(t){
+  if(!t) return Promise.resolve(false);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(t).then(function(){return true;}).catch(function(){return false;});
+  }
+  try{
+    var ta=document.createElement("textarea");
+    ta.value=t; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); document.body.removeChild(ta);
+    return Promise.resolve(true);
+  }catch(e){ return Promise.resolve(false); }
+}
+window.sharePost=function(id){
+  var p=posts.filter(function(x){return x.id===id;})[0]; if(!p) return;
+  var caption=(p.text||"")+(p.tags?"\n\n"+p.tags:"");
+
+  copyText(caption).then(function(copied){
+    var file=null;
+    if(p.image){ try{ file=dataUrlToFile(p.image,"post.jpg"); }catch(e){} }
+
+    // Partage natif avec l'image (téléphone)
+    if(file && navigator.canShare && navigator.canShare({files:[file]})){
+      navigator.share({files:[file],text:caption})
+        .then(function(){ toast(copied?"Texte copié — colle-le dans la légende.":"Photo partagée."); })
+        .catch(function(){});
+      return;
+    }
+    // Partage natif texte seul
+    if(navigator.share && !file){
+      navigator.share({text:caption}).catch(function(){});
+      return;
+    }
+    // Ordinateur : téléchargement de la photo + texte copié
+    if(p.image){
+      var a=document.createElement("a");
+      a.href=p.image; a.download="post.jpg";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      toast(copied?"Photo téléchargée, texte copié.":"Photo téléchargée.");
+    }else{
+      toast(copied?"Texte copié.":"Copie impossible dans ce navigateur.");
+    }
+  });
+};
+
 window.dupPost=function(id){
   var p=posts.filter(function(x){return x.id===id;})[0]; if(!p)return;
   posts.push({id:Date.now(),text:p.text,tags:p.tags,networks:p.networks,status:"DRAFT",date:p.date,time:p.time,image:p.image});
